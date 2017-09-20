@@ -4619,8 +4619,14 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 
 		$pk3 = new PlayerListPacket();
 		$pk3->type = PlayerListPacket::TYPE_ADD;
-		$pk3->entries[] = [$this->getUniqueId(), $this->getId(), $this->getName(), $this->skinName, $this->skin, $this->capeData, $this->skinGeometryName, $this->skinGeometryData, $this->getXUID()];
-
+		//$pk3->entries[] = [$this->getUniqueId(), $this->getId(), $this->getName(), $this->skinName, $this->skin, $this->capeData, $this->skinGeometryName, $this->skinGeometryData, $this->getXUID()];
+		$pk3->entries[] = [$this->getUniqueId(), $this->getId(), $this->getName(), $this->skinName, $this->skin, $this->capeData, $this->skinGeometryName, $this->skinGeometryData];
+		if ($this->deviceType == self::OS_WIN10) { // windows 10 edition and xbox
+			$pk3->entries[0][] = "";
+		} else {
+			$pk3->entries[0][] = $this->getXUID();
+		}
+		
 		$pk4 = new AddPlayerPacket();
 		$pk4->uuid = $this->getUniqueId();
 		$pk4->username = $this->getName();
