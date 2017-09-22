@@ -56,6 +56,8 @@ class LoginPacket extends PEPacket {
 	public $skinGeometryName = "";
 	public $skinGeometryData = "";
 	public $capeData = "";
+	public $currentInputMode = 0;
+	public $defaultInputMode = 0;
 
 	private function getFromString(&$body, $len) {
 		$res = substr($body, 0, $len);
@@ -145,6 +147,12 @@ class LoginPacket extends PEPacket {
         }
 		if (isset($this->playerData['CapeData'])) {
             $this->capeData = base64_decode($this->playerData['CapeData']);
+        }
+		if (isset($this->playerData['CurrentInputMode'])) {
+            $this->currentInputMode = $this->playerData['CurrentInputMode'];    
+        }
+		if (isset($this->playerData['DefaultInputMode'])) {
+            $this->defaultInputMode = $this->playerData['DefaultInputMode'];    
         }
 		$this->originalProtocol = $this->protocol1;
 		$this->protocol1 = self::convertProtocol($this->protocol1);

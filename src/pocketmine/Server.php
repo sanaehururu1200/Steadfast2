@@ -2289,7 +2289,7 @@ class Server{
 			$protocol = $p->getPlayerProtocol();
 			if (!isset($readyPackets[$protocol])) {
 				$packet = clone $pk;
-				if ($p->getDeviceOS() == Player::OS_WIN10) {
+				if ($p->getDeviceOS() == Player::OS_WIN10 && $p->getInputMode() == Player::INPUT_MODE_GAMEPAD) {
 					$packet->entries[] = $win10Data;
 				} else {
 					$packet->entries[] = $otherData;

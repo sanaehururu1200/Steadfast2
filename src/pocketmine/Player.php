@@ -186,8 +186,16 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
     const OS_WIN10 = 7;
     const OS_WIN32 = 8;
     const OS_DEDICATED = 9;
-    const OS_ORBIS = 10;
-    const OS_NX = 11;
+	const OS_TVOS = 10;
+    const OS_ORBIS = 11;
+    const OS_NX = 12;
+	
+	const INPUT_MODE_UNDEFINED = 0;
+	const INPUT_MODE_MOUSE = 1;
+	const INPUT_MODE_TOUCH = 2;
+	const INPUT_MODE_GAMEPAD = 3;
+	const INPUT_MODE_MOTION_CONTROLLER = 4;
+	const INPUT_MODE_COUNT = 5; // ???
     
     const INVENTORY_CLASSIC = 0;
     const INVENTORY_POCKET = 1;
@@ -365,6 +373,8 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 	protected $subClientId = 0;
 	/** @var Player */
 	protected $parent = null;
+	/** @var integer */
+	protected $inputMode = self::INPUT_MODE_UNDEFINED;
 	
 	public function getLeaveMessage(){
 		return "";
@@ -1640,6 +1650,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 				$this->serverAddress = $packet->serverAddress;
 				$this->clientVersion = $packet->clientVersion;
 				$this->originalProtocol = $packet->originalProtocol;
+				$this->inputMode = $packet->defaultInputMode;
 					
 				$this->identityPublicKey = $packet->identityPublicKey;
 				$this->processLogin();
@@ -3670,6 +3681,10 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
         return $this->xuid;
     }
 	
+	public function getInputMode() {
+		return $this->inputMode;
+	}
+	
 	public function setTitle($text, $subtext = '', $time = 36000) {
 		if ($this->protocol >= Info::PROTOCOL_105) {		
 			$pk = new SetTitlePacket();
@@ -4621,7 +4636,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 		$pk3->type = PlayerListPacket::TYPE_ADD;
 		//$pk3->entries[] = [$this->getUniqueId(), $this->getId(), $this->getName(), $this->skinName, $this->skin, $this->capeData, $this->skinGeometryName, $this->skinGeometryData, $this->getXUID()];
 		$pk3->entries[] = [$this->getUniqueId(), $this->getId(), $this->getName(), $this->skinName, $this->skin, $this->capeData, $this->skinGeometryName, $this->skinGeometryData];
-		if ($this->deviceType == self::OS_WIN10) { // windows 10 edition and xbox
+		if ($this->deviceType == self::OS_WIN10 && $this->inputMode == self::INPUT_MODE_GAMEPAD) { // xbox and win10 players playing with gamepad
 			$pk3->entries[0][] = "";
 		} else {
 			$pk3->entries[0][] = $this->getXUID();
