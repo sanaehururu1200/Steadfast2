@@ -189,6 +189,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 	const OS_TVOS = 10;
     const OS_ORBIS = 11;
     const OS_NX = 12;
+	const OS_XBOX = 9999; // !INPORTANT! custom, not exists in protocol
 	
 	const INPUT_MODE_UNDEFINED = 0;
 	const INPUT_MODE_MOUSE = 1;
@@ -373,8 +374,6 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 	protected $subClientId = 0;
 	/** @var Player */
 	protected $parent = null;
-	/** @var integer */
-	protected $inputMode = self::INPUT_MODE_UNDEFINED;
 	
 	public function getLeaveMessage(){
 		return "";
@@ -1649,7 +1648,10 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 				$this->serverAddress = $packet->serverAddress;
 				$this->clientVersion = $packet->clientVersion;
 				$this->originalProtocol = $packet->originalProtocol;
-				$this->inputMode = $packet->defaultInputMode;
+				// hack for XBox, not 100% warranty
+				if ($this->deviceType == self::OS_WIN10 && $packet->defaultInputMode == self::INPUT_MODE_GAMEPAD) {
+					$this->deviceType = self::OS_XBOX;
+				}
 					
 				$this->identityPublicKey = $packet->identityPublicKey;
 				$this->processLogin();
@@ -3680,10 +3682,6 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
         return $this->xuid;
     }
 	
-	public function getInputMode() {
-		return $this->inputMode;
-	}
-	
 	public function setTitle($text, $subtext = '', $time = 36000) {
 		if ($this->protocol >= Info::PROTOCOL_105) {		
 			$pk = new SetTitlePacket();
@@ -4635,7 +4633,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 		$pk3->type = PlayerListPacket::TYPE_ADD;
 		//$pk3->entries[] = [$this->getUniqueId(), $this->getId(), $this->getName(), $this->skinName, $this->skin, $this->capeData, $this->skinGeometryName, $this->skinGeometryData, $this->getXUID()];
 		$pk3->entries[] = [$this->getUniqueId(), $this->getId(), $this->getName(), $this->skinName, $this->skin, $this->capeData, $this->skinGeometryName, $this->skinGeometryData];
-		if ($this->deviceType == self::OS_WIN10 && $this->inputMode == self::INPUT_MODE_GAMEPAD) { // xbox and win10 players playing with gamepad
+		if ($this->deviceType == self::OS_XBOX) {
 			$pk3->entries[0][] = "";
 		} else {
 			$pk3->entries[0][] = $this->getXUID();
@@ -4773,16 +4771,47 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 	public function sendFullPlayerList() {
 		$players = $this->server->getOnlinePlayers();
 		if (count($players) > 0) {
+			$xboxPlayers = [];
+			foreach ($players as $key => $player) {
+				if ($player->getDeviceOS() == self::OS_XBOX) {
+					$xboxPlayers[$key] = $player;
+					unset($players[$key]);
+				}
+			}
 			$pk = new PlayerListPacket();
 			$pk->type = PlayerListPacket::TYPE_ADD;
-			$pk->entries[] = [$this->getUniqueId(), $this->getId(), $this->getName(), $this->getSkinName(), $this->getSkinData(), $this->getCapeData(), $this->getSkinGeometryName(), $this->getSkinGeometryData(), $this->getXUID()];
+			$pk->entries[] = [
+				$this->getUniqueId(), 
+				$this->getId(), 
+				$this->getName(), 
+				$this->getSkinName(), 
+				$this->getSkinData(), 
+				$this->getCapeData(), 
+				$this->getSkinGeometryName(), 
+				$this->getSkinGeometryData(), 
+				$this->getXUID()
+			];
 			$this->server->batchPackets($players, [$pk]);
+			$pk = clone $pk;
+			$pk->entries[0][8] = "";
+			$this->server->batchPackets($xboxPlayers, [$pk]);
+			$players = array_merge($xboxPlayers, $players);
 		}
 		$players[] = $this;
 		$pk = new PlayerListPacket();
 		$pk->type = PlayerListPacket::TYPE_ADD;
 		foreach ($players as $player) {
-			$pk->entries[] = [$player->getUniqueId(), $player->getId(), $player->getName(), $player->getSkinName(), $player->getSkinData(), $player->getCapeData(), $player->getSkinGeometryName(), $player->getSkinGeometryData(), $player->getXUID()];
+			$pk->entries[] = [
+				$player->getUniqueId(), 
+				$player->getId(), 
+				$player->getName(), 
+				$player->getSkinName(), 
+				$player->getSkinData(), 
+				$player->getCapeData(), 
+				$player->getSkinGeometryName(), 
+				$player->getSkinGeometryData(), 
+				$this->deviceType == self::OS_XBOX ? "" : $player->getXUID()
+			];
 		}
 		$this->server->batchPackets([$this], [$pk]);
 	}

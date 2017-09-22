@@ -2282,25 +2282,15 @@ class Server{
 	public function updatePlayerListData(UUID $uuid, $entityId, $name, $skinName, $skinData, $skinGeometryName, $skinGeometryData, $capeData, $xuid, $players){
 		$pk = new PlayerListPacket();
 		$pk->type = PlayerListPacket::TYPE_ADD;
-//		$pk->entries[] = [$uuid, $entityId, $name, $skinName, $skinData, $capeData, $skinGeometryName, $skinGeometryData, $xuid];
-		$win10Data = [$uuid, $entityId, $name, $skinName, $skinData, $capeData, $skinGeometryName, $skinGeometryData, ""];
-		$otherData = [$uuid, $entityId, $name, $skinName, $skinData, $capeData, $skinGeometryName, $skinGeometryData, $xuid];
+		$pk->entries[] = [$uuid, $entityId, $name, $skinName, $skinData, $capeData, $skinGeometryName, $skinGeometryData, $xuid];
 		 
 		$readyPackets = [];
 		foreach ($players as $p){
 			$protocol = $p->getPlayerProtocol();
 			if (!isset($readyPackets[$protocol])) {
-				$packet = clone $pk;
-				if ($p->getDeviceOS() == Player::OS_WIN10 && $p->getInputMode() == Player::INPUT_MODE_GAMEPAD) {
-					$packet->entries[] = $win10Data;
-				} else {
-					$packet->entries[] = $otherData;
-				}
-//				$pk->encode($protocol, $p->getSubClientId());
-				$packet->encode($protocol, $p->getSubClientId());
+				$pk->encode($protocol, $p->getSubClientId());
 				$batch = new BatchPacket();
-//				$batch->payload = zlib_encode(Binary::writeVarInt(strlen($pk->getBuffer())) . $pk->getBuffer(), ZLIB_ENCODING_DEFLATE, 7);
-				$batch->payload = zlib_encode(Binary::writeVarInt(strlen($packet->getBuffer())) . $packet->getBuffer(), ZLIB_ENCODING_DEFLATE, 7);
+				$batch->payload = zlib_encode(Binary::writeVarInt(strlen($pk->getBuffer())) . $pk->getBuffer(), ZLIB_ENCODING_DEFLATE, 7);
 				$readyPackets[$protocol] = $batch;
 			}
 			$p->dataPacket($readyPackets[$protocol]);
