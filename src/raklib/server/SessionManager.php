@@ -219,7 +219,9 @@ class SessionManager{
 			if (empty($buff)) {
 				return;
 			}
-			//TODO encrypt
+			if ($session->isEncryptEnable()) {
+				$buff = $session->getDecrypt($buff);
+			}
 			if (ord($buff{0}) == 0x78) {
 				$decoded = zlib_decode($buff);
  				$stream = new BinaryStream($decoded);
@@ -289,6 +291,13 @@ class SessionManager{
 				case RakLib::PACKET_ENCAPSULATED:
 					if (isset($this->sessions[$packet->identifier])) {
 						$this->sessions[$packet->identifier]->addEncapsulatedToQueue($packet, $packet->flags);
+					} else {
+						$this->streamInvalid($packet->identifier);
+					}
+					break;
+				case RakLib::PACKET_ENABLE_ENCRYPT:
+					if (isset($this->sessions[$packet->identifier])) {
+						$this->sessions[$packet->identifier]->enableEncrypt($packet->token, $packet->privateKey, $packet->publicKey);
 					} else {
 						$this->streamInvalid($packet->identifier);
 					}

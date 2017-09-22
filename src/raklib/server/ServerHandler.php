@@ -15,7 +15,6 @@
 
 namespace raklib\server;
 
-use raklib\Binary;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\RakLib;
 use raklib\protocol\RawPacket;
@@ -25,6 +24,7 @@ use raklib\protocol\BlockAddressPacket;
 use raklib\protocol\ShutdownPacket;
 use raklib\protocol\EmergencyShutdownPacket;
 use raklib\protocol\InvalidSessionPacket;
+use raklib\protocol\EnableEncryptPacket;
 
 class ServerHandler{
 
@@ -52,6 +52,10 @@ class ServerHandler{
 
     public function sendOption($name, $value){
         $this->server->pushMainToThreadPacket(new SetOptionPacket($name, $value));
+    }
+	
+	public function enableEncrypt($identifier, $token, $privateKey, $publicKey){
+        $this->server->pushMainToThreadPacket(new EnableEncryptPacket($identifier, $token, $privateKey, $publicKey));
     }
 
     public function blockAddress($address, $timeout){

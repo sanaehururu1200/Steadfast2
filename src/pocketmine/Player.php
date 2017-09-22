@@ -318,9 +318,6 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 	private $expLevel = 0;
 
 	private $elytraIsActivated = false;
-	
-	private $encrypter = null;
-	private $encryptEnabled = false;
     
     /** @IMPORTANT don't change the scope */
     private $inventoryType = self::INVENTORY_CLASSIC;
@@ -3161,7 +3158,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 			$pk->serverToken = $token;
 			$pk->privateKey = $privateKey;
 			$this->dataPacket($pk);
-			$this->enableEncrypt($token, $privateKey, $this->identityPublicKey);
+			$this->interface->enableEncrypt($this, $token, $privateKey, $this->identityPublicKey);
 		} else {
 			$this->continueLoginProcess();
 		}
@@ -3622,23 +3619,6 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 
 	public function isElytraActivated() {
 		return $this->elytraIsActivated;
-	}
-	
-	public function isEncryptEnable() {
-		return $this->encryptEnabled;
-	}
-
-	public function getEncrypt($sStr) {		
-		return $this->encrypter->encrypt($sStr);
-	}	
-
-	public function getDecrypt($sStr) {
-		return $this->encrypter->decrypt($sStr);
-	}
-
-	private function enableEncrypt($token, $privateKey, $publicKey) {
-		$this->encrypter = new \McpeEncrypter($token, $privateKey, $publicKey);
-		$this->encryptEnabled = true;
 	}
 
 	public function getPlayerProtocol() {

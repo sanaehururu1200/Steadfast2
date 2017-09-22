@@ -217,6 +217,10 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 	public function setPortCheck($name){
 		$this->interface->sendOption("portChecking", (bool) $name);
 	}
+	
+	public function enableEncrypt($player, $token, $privateKey, $publicKey) {
+		$this->interface->enableEncrypt($this->identifiers[$player], $token, $privateKey, $publicKey);
+	}
 
 	public function handleOption($name, $value){
 		if($name === "bandwidth"){
