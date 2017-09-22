@@ -15,7 +15,7 @@
 
 namespace raklib\server;
 
-use raklib\Binary;
+use pocketmine\utils\Binary;
 use raklib\protocol\ACK;
 use raklib\protocol\CLIENT_CONNECT_DataPacket;
 use raklib\protocol\CLIENT_DISCONNECT_DataPacket;
@@ -259,12 +259,28 @@ class Session{
 	    }
     }
 
+	
+	private function fakeZlib($buffer) {
+		static $startBytes = "\x78\x01\x01";
+		$len = strlen($buffer);
+		return $startBytes . Binary::writeLShort($len) . Binary::writeLShort($len ^ 0xffff) . $buffer . hex2bin(hash('adler32', $buffer, false));
+	}
+	
     /**
      * @param EncapsulatedPacket $packet
      * @param int                $flags
      */
     public function addEncapsulatedToQueue(EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
-
+		//TODO encrypt
+		if ($packet->needZlib) {
+			if (strlen($packet->buffer > 512)) {
+				$packet->buffer = chr(0xfe) . zlib_encode(Binary::writeVarInt(strlen($packet->buffer)) . $packet->buffer, ZLIB_ENCODING_DEFLATE, 7);
+			} else {
+				$packet->buffer = chr(0xfe) . $this->fakeZlib(Binary::writeVarInt(strlen($packet->buffer)) . $packet->buffer);
+			}
+		} else {
+			$packet->buffer = chr(0xfe) . $packet->buffer;
+		}
         if(($packet->needACK = ($flags & RakLib::FLAG_NEED_ACK) > 0) === true){
 	        $this->needACK[$packet->identifierACK] = [];
         }

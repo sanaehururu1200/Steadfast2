@@ -51,6 +51,7 @@ use raklib\protocol\CloseSessionPacket;
 use raklib\protocol\InvalidSessionPacket;
 use raklib\protocol\OpenSessionPacket;
 use raklib\protocol\SetOptionPacket;
+use pocketmine\utils\BinaryStream;
 
 class SessionManager{
     protected $packetPool = [];
@@ -212,9 +213,34 @@ class SessionManager{
     }
 
     public function streamEncapsulated(Session $session, EncapsulatedPacket $packet, $flags = RakLib::PRIORITY_NORMAL){
-		$packet->identifier = $session->getAddress() . ":" . $session->getPort();
-		$packet->flags = $flags;
-		$this->server->pushThreadToMainPacket($packet);
+		if (ord($packet->buffer{0}) == 0xfe) {
+			$identifier = $session->getAddress() . ":" . $session->getPort();
+			$buff = substr($packet->buffer, 1);
+			if (empty($buff)) {
+				return;
+			}
+			//TODO encrypt
+			if (ord($buff{0}) == 0x78) {
+				$decoded = zlib_decode($buff);
+ 				$stream = new BinaryStream($decoded);
+ 				$length = strlen($decoded);
+ 				while ($stream->getOffset() < $length) {
+ 					$buf = $stream->getString();
+					if (empty($buf)) {
+						continue;
+					}
+					$pk = new EncapsulatedPacket();
+					$pk->identifier = $identifier;
+					$pk->buffer = $buf;
+					$this->server->pushThreadToMainPacket($pk);
+ 				}
+			} else {
+				$pk = new EncapsulatedPacket();
+				$pk->identifier = $identifier;
+				$pk->buffer = $buff;
+				$this->server->pushThreadToMainPacket($pk);
+			}
+		}
     }
 	
 	public function streamPing(Session $session){

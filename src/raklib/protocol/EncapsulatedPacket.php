@@ -23,6 +23,7 @@ class EncapsulatedPacket extends \Threaded {
 	public $buffer;
 	public $needACK = false;
 	public $identifierACK = null;
+	public $needZlib = false;
 
 	/**
 	 * @param string $binary
