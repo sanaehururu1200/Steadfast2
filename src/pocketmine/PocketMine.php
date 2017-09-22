@@ -456,7 +456,10 @@ namespace pocketmine {
 	}
 
 	ThreadManager::init();
+	mcprofiler_enable();
 	$server = new Server($autoloader, $logger, \pocketmine\PATH, \pocketmine\DATA, \pocketmine\PLUGIN_PATH);
+	$data = mcprofiler_disable();
+	file_put_contents("./logs/profile_" . date('m.d.Y_h:i:s', time()) . ".log", json_encode($data));
 
 	$logger->info("Stopping other threads");
 

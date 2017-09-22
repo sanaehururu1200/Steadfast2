@@ -38,6 +38,7 @@ use raklib\server\ServerHandler;
 use raklib\server\ServerInstance;
 use pocketmine\network\protocol\BatchPacket;
 use pocketmine\utils\Binary;
+use pocketmine\utils\BinaryStream;
 
 class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 	
@@ -179,14 +180,8 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 			$player = $this->players[$identifier];
 			try{
 				if($buffer !== ""){
-					$pk = $this->getPacket($buffer, $player);			
-					if (!is_null($pk)) {
-						try {
-							$pk->decode($player->getPlayerProtocol());
-						}catch(\Exception $e){
-							file_put_contents("logs/" . date('Y.m.d') . "_decode_error.log", $e->getMessage() . "\n", FILE_APPEND | LOCK_EX);
-							return;
-						}
+					$pks = $this->getPackets($buffer, $player);						
+					foreach ($pks as $pk) {
 						$player->handleDataPacket($pk);
 					}
 				}
@@ -276,23 +271,46 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 	}
 	
 
-	private function getPacket($buffer, $player){
+	private function getPackets($buffer, $player){
 		$playerProtocol = $player->getPlayerProtocol();
 		if ($player->isEncryptEnable()) {
 			$buffer = $player->getDecrypt($buffer);			
-		}		
-		if ($playerProtocol >= Info::PROTOCOL_110 || $player->getOriginalProtocol() == 0 && $this->isZlib($buffer)) {
-			$pk = new BatchPacket($buffer);
-			$pk->is110 = true;
-			return $pk;
+		}	
+		if ($player->getOriginalProtocol() == 0 && ord($buffer{0}) == 0x78) {
+			$playerProtocol = Info::PROTOCOL_110;
 		}
-		$pid = ord($buffer{0});
-		if (($data = $this->network->getPacket($pid, $playerProtocol)) === null) {
-			return null;
+		$result = [];
+		if ($playerProtocol >= Info::PROTOCOL_110) {
+			$decoded = zlib_decode($buffer);
+			$stream = new BinaryStream($decoded);
+			$length = strlen($decoded);
+			while ($stream->getOffset() < $length) {
+				$buf = $stream->getString();
+				if (!is_null($pk = $this->network->getPacket(ord($buf{0}), $playerProtocol))) {
+					$pk->setBuffer($buf, 1);
+					try {
+						$pk->decode($playerProtocol);
+					}catch(\Exception $e){
+						file_put_contents("logs/" . date('Y.m.d') . "_decode_error.log", $e->getMessage() . "\n", FILE_APPEND | LOCK_EX);
+						return [];
+					}
+					$result[] = $pk;
+				}
+			}
+			return $result;
 		}
-		$offset = 1;
-		$data->setBuffer($buffer, $offset);
-		return $data;
+		
+		if (!is_null($pk = $this->network->getPacket(ord($buffer{0}), $playerProtocol))) {
+			$pk->setBuffer($buffer, 1);
+			try {
+				$pk->decode($playerProtocol);
+			}catch(\Exception $e){
+				file_put_contents("logs/" . date('Y.m.d') . "_decode_error.log", $e->getMessage() . "\n", FILE_APPEND | LOCK_EX);
+				return [];
+			}
+			$result[] = $pk;
+		}
+		return $result;
 	}
 
 	public function putReadyPacket($player, $buffer) {
@@ -319,13 +337,6 @@ class RakLibInterface implements ServerInstance, AdvancedSourceInterface{
 		static $startBytes = "\x78\x01\x01";
 		$len = strlen($buffer);
 		return $startBytes . Binary::writeLShort($len) . Binary::writeLShort($len ^ 0xffff) . $buffer . hex2bin(hash('adler32', $buffer, false));
-	}
-	
-	private function isZlib($buffer) {
-		if (ord($buffer{0}) == 120) {
-			return true;
-		}
-		return false;
 	}
 
 }
