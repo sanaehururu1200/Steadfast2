@@ -177,7 +177,6 @@ class Session{
             foreach($this->needACK as $identifierACK => $indexes){
                 if(count($indexes) === 0){
                     unset($this->needACK[$identifierACK]);
-                    $this->sessionManager->notifyACK($this, $identifierACK);
                 }
             }
         }

@@ -57,8 +57,8 @@ class RakLibServer extends \Thread{
         $this->loadPaths = array_reverse($loadPaths);
         $this->shutdown = false;
 
-        $this->externalQueue = new \Threaded;
-        $this->internalQueue = new \Threaded;
+        $this->externalQueue = new \Volatile();
+        $this->internalQueue = new \Volatile();
 
 	    if(\Phar::running(true) !== ""){
 		    $this->mainPath = \Phar::running(true);
@@ -128,7 +128,6 @@ class RakLibServer extends \Thread{
     }
 
     public function pushThreadToMainPacket($str){
-//		var_dump(debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 20));
         $this->externalQueue[] = $str;
     }
 
