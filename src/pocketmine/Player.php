@@ -777,6 +777,9 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 
 		$count = 0;
 		foreach($this->loadQueue as $index => $distance){
+			if($count >= 10){
+				break;
+			}
 			$X = null;
 			$Z = null;
 			Level::getXZ($index, $X, $Z);
@@ -1811,6 +1814,9 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 				//Timings::$timerMobEqipmentPacket->stopTiming();
 				break;
 			case 'LEVEL_SOUND_EVENT_PACKET':
+				if ($packet->eventId == LevelSoundEventPacket::SOUND_UNDEFINED) {
+					break;
+				}
 				$viewers = $this->getViewers();
 				foreach ($viewers as $viewer) {
 					$viewer->dataPacket($packet);
@@ -2150,7 +2156,7 @@ class Player extends Human implements CommandSender, InventoryHolder, IPlayer{
 				$this->craftingType = self::CRAFTING_DEFAULT;
 				$this->currentTransaction = null;
 				// @todo добавить обычный инвентарь и броню
-				if ($packet->windowid === $this->currentWindowId) {
+				if ($packet->windowid === $this->currentWindowId && $this->currentWindow != null) {
 					$this->server->getPluginManager()->callEvent(new InventoryCloseEvent($this->currentWindow, $this));
 					$this->removeWindow($this->currentWindow);
 				}
