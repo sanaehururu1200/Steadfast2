@@ -105,35 +105,30 @@ class RakLibServer extends \Thread{
         return $this->logger;
     }
 
-    /**
-     * @return \Threaded
-     */
-    public function getExternalQueue(){
-        return $this->externalQueue;
-    }
 
-    /**
-     * @return \Threaded
-     */
-    public function getInternalQueue(){
-        return $this->internalQueue;
-    }
+    public function pushMainToThreadPacket($str) {
+		$this->internalQueue->synchronized(function($queue, $data) {
+			$queue[] = $data;
+		}, $this->internalQueue, $str);
+	}
 
-    public function pushMainToThreadPacket($str){	
-        $this->internalQueue[] = $str;
-    }
+	public function readMainToThreadPacket() {
+		return $this->internalQueue->synchronized(function($queue) {
+			return $queue->shift();
+		}, $this->internalQueue);
+	}
 
-    public function readMainToThreadPacket(){
-        return $this->internalQueue->shift();
-    }
+	public function pushThreadToMainPacket($str) {
+		$this->externalQueue->synchronized(function($queue, $data) {
+			$queue[] = $data;
+		}, $this->externalQueue, $str);
+	}
 
-    public function pushThreadToMainPacket($str){
-        $this->externalQueue[] = $str;
-    }
-
-    public function readThreadToMainPacket(){
-        return $this->externalQueue->shift();
-    }
+	public function readThreadToMainPacket() {
+		return $this->externalQueue->synchronized(function($queue) {
+			return $queue->shift();
+		}, $this->externalQueue);
+	}
 
 	public function shutdownHandler(){
 		if($this->shutdown !== true){
